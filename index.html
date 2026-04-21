@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BacheIA Bucaramanga — Prototipo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Roboto', sans-serif;
+    background: #0f2027;
+    background: linear-gradient(135deg, #0f2027, #1a3a2a, #0f2027);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    color: white;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; color: #1D9E75; letter-spacing: -0.5px; }
+  .header p { font-size: 14px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+  .device {
+    width: 320px;
+    height: 640px;
+    background: #1a1a2e;
+    border-radius: 40px;
+    border: 6px solid #333;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+    overflow: hidden;
+    position: relative;
+  }
+  .notch {
+    width: 100px;
+    height: 20px;
+    background: #111;
+    border-radius: 0 0 14px 14px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+  }
+  .screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #F5F5F5;
+    display: none;
+    flex-direction: column;
+    animation: slideIn 0.3s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* TOPBAR */
+  .topbar {
+    background: #1D9E75;
+    padding: 28px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .topbar-back { color: white; font-size: 18px; cursor: pointer; padding: 4px; }
+  .topbar h2 { color: white; font-size: 16px; font-weight: 500; flex: 1; }
+  .topbar-icon { color: rgba(255,255,255,0.8); font-size: 18px; }
+
+  /* SCREEN 1 — INICIO */
+  .map-area {
+    background: linear-gradient(160deg, #a8d5b5, #c8e6c9);
+    height: 220px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .map-grid {
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.15) 0, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 40px),
+                      repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 40px);
+  }
+  .map-label { position: absolute; top: 8px; left: 10px; background: rgba(255,255,255,0.85); border-radius: 6px; padding: 3px 8px; font-size: 10px; color: #555; font-weight: 500; }
+  .map-pin { position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+  .pin-red { background: #E53935; top: 60px; left: 80px; }
+  .pin-orange { background: #FF9800; top: 100px; left: 200px; }
+  .pin-yellow { background: #FFC107; top: 140px; left: 130px; }
+  .pin-red2 { background: #E53935; top: 80px; left: 250px; }
+  .map-counter { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.65); border-radius: 20px; padding: 4px 10px; color: white; font-size: 11px; font-weight: 500; }
+
+  .list-header { padding: 12px 16px 6px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .list-header span { font-size: 13px; font-weight: 500; color: #333; }
+  .list-header small { font-size: 11px; color: #1D9E75; }
+
+  .report-card {
+    margin: 0 12px 8px;
+    background: white;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    flex-shrink: 0;
+  }
+  .severity-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .card-info { flex: 1; }
+  .card-info p { font-size: 12px; font-weight: 500; color: #222; }
+  .card-info small { font-size: 10px; color: #888; }
+  .card-badge { font-size: 9px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
+  .badge-alta { background: #FFEBEE; color: #C62828; }
+  .badge-media { background: #FFF3E0; color: #E65100; }
+  .badge-baja { background: #F3E5F5; color: #6A1B9A; }
+
+  .fab {
+    margin: 10px 12px 12px;
+    background: #1D9E75;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(29,158,117,0.4);
+    flex-shrink: 0;
+  }
+  .fab:active { transform: scale(0.98); }
+
+  /* SCREEN 2 — REPORTAR */
+  .camera-area {
+    margin: 14px 12px 10px;
+    height: 170px;
+    background: #E0E0E0;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    border: 2px dashed #BDBDBD;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .camera-area.has-photo { border: none; background: #b2dfdb; }
+  .camera-icon { font-size: 32px; color: #9E9E9E; }
+  .camera-text { font-size: 12px; color: #757575; font-weight: 500; }
+  .ai-result {
+    margin: 0 12px 8px;
+    background: #E1F5EE;
+    border-left: 3px solid #1D9E75;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 12px;
+    display: none;
+    flex-shrink: 0;
+  }
+  .ai-result.visible { display: block; }
+  .ai-result p { font-size: 12px; color: #085041; font-weight: 500; }
+  .ai-result small { font-size: 10px; color: #1D9E75; }
+
+  .form-field {
+    margin: 0 12px 8px;
+    background: white;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    flex-shrink: 0;
+  }
+  .form-field label { font-size: 10px; color: #9E9E9E; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 3px; }
+  .form-field p { font-size: 13px; color: #333; }
+
+  .form-select {
+    margin: 0 12px 8px;
+    background: white;
+    border: 1px solid #1D9E75;
+    border-radius: 8px;
+    padding: 10px 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .form-select label { font-size: 10px; color: #9E9E9E; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 3px; }
+  .form-select p { font-size: 13px; color: #333; }
+
+  /* SCREEN 3 — MIS REPORTES */
+  .stats-row { display: flex; gap: 8px; margin: 12px 12px 8px; flex-shrink: 0; }
+  .stat-box { flex: 1; background: white; border-radius: 10px; padding: 10px 8px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .stat-box .num { font-size: 22px; font-weight: 700; color: #1D9E75; }
+  .stat-box .lbl { font-size: 9px; color: #999; margin-top: 2px; }
+
+  .report-item {
+    margin: 0 12px 8px;
+    background: white;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .status-bar { width: 4px; position: absolute; left: 0; top: 0; bottom: 0; border-radius: 10px 0 0 10px; }
+  .status-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .item-info { flex: 1; }
+  .item-info p { font-size: 13px; font-weight: 500; color: #222; }
+  .item-info small { font-size: 11px; color: #999; }
+  .status-pill { font-size: 9px; font-weight: 500; padding: 3px 8px; border-radius: 20px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    margin-top: auto;
+    background: white;
+    border-top: 1px solid #F0F0F0;
+    display: flex;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1;
+    padding: 10px 4px 8px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: 'Roboto', sans-serif;
+  }
+  .nav-icon { font-size: 18px; display: block; }
+  .nav-label { font-size: 9px; color: #999; margin-top: 2px; display: block; }
+  .nav-item.active .nav-label { color: #1D9E75; }
+
+  /* INFO EXTERNA */
+  .info-row { display: flex; gap: 16px; margin-top: 24px; flex-wrap: wrap; justify-content: center; }
+  .info-chip { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 6px 14px; color: rgba(255,255,255,0.6); font-size: 12px; font-family: 'Roboto', sans-serif; }
+  .info-chip span { color: #1D9E75; font-weight: 500; }
+
+  .team-footer { margin-top: 16px; text-align: center; color: rgba(255,255,255,0.3); font-size: 11px; font-family: 'Roboto', sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BacheIA Bucaramanga</h1>
+  <p>Prototipo interactivo · Toca los botones para navegar</p>
+</div>
+
+<div class="device">
+  <div class="notch"></div>
+
+  <!-- PANTALLA 1: INICIO -->
+  <div class="screen active" id="s1">
+    <div class="topbar">
+      <h2>BacheIA — Bucaramanga</h2>
+      <span class="topbar-icon">🔔</span>
+    </div>
+
+    <div class="map-area">
+      <div class="map-grid"></div>
+      <div class="map-label">Mapa en tiempo real</div>
+      <div class="map-pin pin-red"></div>
+      <div class="map-pin pin-orange"></div>
+      <div class="map-pin pin-yellow"></div>
+      <div class="map-pin pin-red2"></div>
+      <div class="map-counter">47 baches activos</div>
+    </div>
+
+    <div class="list-header">
+      <span>Reportes recientes</span>
+      <small>Ver todos →</small>
+    </div>
+
+    <div class="report-card">
+      <div class="severity-dot" style="background:#E53935;"></div>
+      <div class="card-info">
+        <p>Cra 27 con Calle 45</p>
+        <small>Hace 12 minutos · 3 confirmaciones</small>
+      </div>
+      <div class="card-badge badge-alta">ALTA</div>
+    </div>
+
+    <div class="report-card">
+      <div class="severity-dot" style="background:#FF9800;"></div>
+      <div class="card-info">
+        <p>Av. González Valencia</p>
+        <small>Hace 1 hora · 1 confirmación</small>
+      </div>
+      <div class="card-badge badge-media">MEDIA</div>
+    </div>
+
+    <div class="report-card">
+      <div class="severity-dot" style="background:#9C27B0;"></div>
+      <div class="card-info">
+        <p>Calle 36 · El Prado</p>
+        <small>Hace 3 horas · En revisión</small>
+      </div>
+      <div class="card-badge badge-baja">BAJA</div>
+    </div>
+
+    <button class="fab" onclick="goTo('s2')">
+      + Reportar nuevo bache
+    </button>
+
+    <div class="bottom-nav">
+      <button class="nav-item active">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Inicio</span>
+      </button>
+      <button class="nav-item" onclick="goTo('s2')">
+        <span class="nav-icon">📷</span>
+        <span class="nav-label">Reportar</span>
+      </button>
+      <button class="nav-item" onclick="goTo('s3')">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Mis reportes</span>
+      </button>
+      <button class="nav-item">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Perfil</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PANTALLA 2: REPORTAR -->
+  <div class="screen" id="s2">
+    <div class="topbar">
+      <span class="topbar-back" onclick="goTo('s1')">←</span>
+      <h2>Reportar daño vial</h2>
+    </div>
+
+    <div class="camera-area" id="camera" onclick="takePhoto()">
+      <div class="camera-icon" id="cam-icon">📷</div>
+      <div class="camera-text" id="cam-text">Toca para tomar foto</div>
+    </div>
+
+    <div class="ai-result" id="ai-box">
+      <p>IA: Severidad ALTA detectada</p>
+      <small>Bache profundo · Confianza 94% · YOLOv8</small>
+    </div>
+
+    <div class="form-select">
+      <div>
+        <label>Tipo de daño</label>
+        <p>Bache profundo</p>
+      </div>
+      <span style="color:#1D9E75;">▼</span>
+    </div>
+
+    <div class="form-field">
+      <label>Ubicación detectada</label>
+      <p>Cra 27 #45-12, Bucaramanga</p>
+    </div>
+
+    <div class="form-field">
+      <label>Descripción adicional (opcional)</label>
+      <p style="color:#BDBDBD;">Agrega más detalles...</p>
+    </div>
+
+    <button class="fab" onclick="submitReport()">
+      Enviar reporte
+    </button>
+
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('s1')">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Inicio</span>
+      </button>
+      <button class="nav-item active">
+        <span class="nav-icon">📷</span>
+        <span class="nav-label">Reportar</span>
+      </button>
+      <button class="nav-item" onclick="goTo('s3')">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Mis reportes</span>
+      </button>
+      <button class="nav-item">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Perfil</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PANTALLA 3: MIS REPORTES -->
+  <div class="screen" id="s3">
+    <div class="topbar">
+      <span class="topbar-back" onclick="goTo('s1')">←</span>
+      <h2>Mis reportes</h2>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="num">4</div>
+        <div class="lbl">Enviados</div>
+      </div>
+      <div class="stat-box">
+        <div class="num">2</div>
+        <div class="lbl">En proceso</div>
+      </div>
+      <div class="stat-box">
+        <div class="num">1</div>
+        <div class="lbl">Resuelto</div>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="status-bar" style="background:#1D9E75;"></div>
+      <div class="status-icon" style="background:#E1F5EE;">🔧</div>
+      <div class="item-info">
+        <p>Cra 27 con Calle 45</p>
+        <small>Reportado hace 2 días</small>
+      </div>
+      <div class="status-pill" style="background:#E1F5EE;color:#085041;">En reparación</div>
+    </div>
+
+    <div class="report-item">
+      <div class="status-bar" style="background:#FF9800;"></div>
+      <div class="status-icon" style="background:#FFF3E0;">🔍</div>
+      <div class="item-info">
+        <p>Calle 36 · El Prado</p>
+        <small>Reportado hace 5 días</small>
+      </div>
+      <div class="status-pill" style="background:#FFF3E0;color:#E65100;">En revisión</div>
+    </div>
+
+    <div class="report-item">
+      <div class="status-bar" style="background:#4CAF50;"></div>
+      <div class="status-icon" style="background:#E8F5E9;">✅</div>
+      <div class="item-info">
+        <p>Av. Quebradora Sur</p>
+        <small>Reparado hace 3 días</small>
+      </div>
+      <div class="status-pill" style="background:#E8F5E9;color:#2E7D32;">Resuelto</div>
+    </div>
+
+    <div class="report-item">
+      <div class="status-bar" style="background:#9E9E9E;"></div>
+      <div class="status-icon" style="background:#F5F5F5;">📩</div>
+      <div class="item-info">
+        <p>Av. González Valencia</p>
+        <small>Reportado hace 1 hora</small>
+      </div>
+      <div class="status-pill" style="background:#F5F5F5;color:#757575;">Recibido</div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('s1')">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Inicio</span>
+      </button>
+      <button class="nav-item" onclick="goTo('s2')">
+        <span class="nav-icon">📷</span>
+        <span class="nav-label">Reportar</span>
+      </button>
+      <button class="nav-item active">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Mis reportes</span>
+      </button>
+      <button class="nav-item">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Perfil</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="info-row">
+  <div class="info-chip"><span>Juan Valbuena</span> · Coordinador</div>
+  <div class="info-chip"><span>Santiago Tello</span> · Diseñador</div>
+</div>
+<div class="info-row">
+  <div class="info-chip">Entornos Digitales · <span>2025-1</span></div>
+  <div class="info-chip">Ingeniería de Sistemas</div>
+</div>
+
+<div class="team-footer">BacheIA Bucaramanga · Prototipo interactivo · Design Thinking</div>
+
+<script>
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  let photoTaken = false;
+  function takePhoto() {
+    if (photoTaken) return;
+    photoTaken = true;
+    const cam = document.getElementById('camera');
+    const icon = document.getElementById('cam-icon');
+    const text = document.getElementById('cam-text');
+    cam.classList.add('has-photo');
+    icon.textContent = '✅';
+    text.textContent = 'Foto capturada · Analizando con IA...';
+    text.style.color = '#085041';
+    setTimeout(() => {
+      text.textContent = 'Análisis completado';
+      document.getElementById('ai-box').classList.add('visible');
+    }, 1200);
+  }
+
+  function submitReport() {
+    if (!photoTaken) { alert('Primero toma una foto del daño vial'); return; }
+    goTo('s3');
+    photoTaken = false;
+    const cam = document.getElementById('camera');
+    cam.classList.remove('has-photo');
+    document.getElementById('cam-icon').textContent = '📷';
+    document.getElementById('cam-text').textContent = 'Toca para tomar foto';
+    document.getElementById('cam-text').style.color = '';
+    document.getElementById('ai-box').classList.remove('visible');
+  }
+</script>
+</body>
+</html>
